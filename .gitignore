@@ -1,0 +1,34 @@
+# Vivado generated project data
+*.cache/
+*.hw/
+*.runs/
+*.sim/
+*.gen/
+*.ip_user_files/
+.Xil/
+xsim.dir/
+
+# Vivado and XSim logs, journals, and temporary files
+*.jou
+*.log
+*.str
+*.pb
+*.wdb
+*.wcfg
+*.dmp
+*.backup.jou
+*.backup.log
+
+# Generated implementation and simulation outputs
+*.bit
+*.bin
+*.mcs
+*.prm
+*.dcp
+*.ltx
+*.vcd
+*.wlf
+*.vvp
+
+# Editor local history
+.history/
