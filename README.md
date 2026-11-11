@@ -1,12 +1,12 @@
-# 面向 2x2 脉动阵列的 LFSR-MISR 内建自测试系统设计
+# LFSR-MISR Built-In Self-Test for a 2x2 Systolic Array
 
-## 1. 工程简介
+## 1. Project Overview
 
-本工程使用 SystemVerilog 实现一个面向 2x2 脉动阵列的 BIST 系统。系统由 16 位 LFSR 测试向量发生器、2x2 MAC 脉动阵列、故障注入模块、16 位 MISR 签名压缩器和 BIST 控制器组成。
+This project implements a built-in self-test (BIST) system for a 2x2 systolic array in SystemVerilog. The design consists of a 16-bit LFSR test-pattern generator, a 2x2 MAC systolic array, a fault-injection module, a 16-bit MISR signature compactor, and a BIST controller.
 
-testbench 同时实例化无故障顶层和带故障注入顶层，二者使用相同的 `SEED` 和 `TEST_NUM`。仿真结束后比较两个最终签名：无故障时应匹配，注入故障时应不匹配。
+The testbench instantiates both a fault-free top-level design and a top-level design with fault injection. Both instances use the same `SEED` and `TEST_NUM`. At the end of simulation, their final signatures are compared: they should match when no fault is injected and differ when a fault is injected.
 
-## 2. 文件结构
+## 2. Directory Structure
 
 ```text
 rtl/
@@ -22,26 +22,26 @@ sim/
 README.md
 ```
 
-## 3. 各模块功能
+## 3. Module Descriptions
 
-- `lfsr_tpg.sv`：16 位 LFSR 测试向量发生器，反馈多项式为 `x^16 + x^14 + x^13 + x^11 + 1`。
-- `mac_pe.sv`：单个 PE/MAC 单元，完成 `acc_out <= acc_out + a_in * b_in`，并传递 A/B 数据。
-- `systolic_array_2x2.sv`：2x2 待测阵列，内部例化 4 个 `mac_pe`，按 K0、K1 两轮输入完成矩阵乘法。
-- `fault_injector.sv`：64 位故障注入模块，支持 bit 翻转、stuck-at-0 和 stuck-at-1。
-- `misr.sv`：16 位 MISR 响应压缩器，使用与 LFSR 相同的反馈多项式。
-- `bist_controller.sv`：BIST 控制状态机，负责 LFSR 加载、阵列启动、MISR 清零/使能和完成标志。
-- `bist_top.sv`：顶层模块，连接 LFSR、脉动阵列、故障注入器、MISR 和控制器。
-- `tb_bist_top.sv`：仿真平台，运行无故障和三种故障注入测试。
+- `lfsr_tpg.sv`: 16-bit LFSR test-pattern generator using the feedback polynomial `x^16 + x^14 + x^13 + x^11 + 1`.
+- `mac_pe.sv`: A single processing element (PE)/MAC unit that computes `acc_out <= acc_out + a_in * b_in` and forwards the A/B data.
+- `systolic_array_2x2.sv`: The 2x2 array under test. It instantiates four `mac_pe` units and performs matrix multiplication with two input cycles, K0 and K1.
+- `fault_injector.sv`: 64-bit fault-injection module supporting bit-flip, stuck-at-0, and stuck-at-1 faults.
+- `misr.sv`: 16-bit multiple-input signature register (MISR) that uses the same feedback polynomial as the LFSR.
+- `bist_controller.sv`: BIST finite-state machine that controls LFSR loading, array start, MISR reset/enable, and the completion flag.
+- `bist_top.sv`: Top-level module connecting the LFSR, systolic array, fault injector, MISR, and controller.
+- `tb_bist_top.sv`: Testbench that runs fault-free operation and tests for the three fault types.
 
-## 4. Vivado 仿真步骤
+## 4. Running the Simulation in Vivado
 
-1. 打开 Vivado 工程 `kechengsheji.xpr`。
-2. 将 `rtl/*.sv` 添加到 `sources_1`。
-3. 将 `sim/tb_bist_top.sv` 添加到 `sim_1`。
-4. 设置仿真顶层为 `tb_bist_top`。
-5. 点击 `Run Simulation -> Run Behavioral Simulation`。
+1. Open the Vivado project `kechengsheji.xpr`.
+2. Add `rtl/*.sv` to `sources_1`.
+3. Add `sim/tb_bist_top.sv` to `sim_1`.
+4. Set `tb_bist_top` as the simulation top.
+5. Select **Run Simulation → Run Behavioral Simulation**.
 
-也可以在 Tcl Console 中执行：
+Alternatively, run the following commands in the Tcl Console:
 
 ```tcl
 add_files -fileset sources_1 [glob ./rtl/*.sv]
@@ -51,7 +51,7 @@ launch_simulation
 run all
 ```
 
-## 5. 主要观察信号
+## 5. Signals to Observe
 
 - `tb_bist_top.sig_golden`
 - `tb_bist_top.sig_faulty`
@@ -64,9 +64,9 @@ run all
 - `u_bist_golden.u_systolic_array_2x2.c00/c01/c10/c11`
 - `u_bist_faulty.u_fault_injector.data_out`
 
-## 6. 预期仿真结果
+## 6. Expected Simulation Output
 
-仿真会依次执行以下测试：
+The simulation runs the following tests in sequence:
 
 ```text
 ========== 2x2 SYSTOLIC ARRAY BIST TEST START ==========
@@ -89,13 +89,13 @@ result = FAULT DETECTED, PASS
 OVERALL RESULT = PASS
 ```
 
-实际签名值会由 LFSR 序列、阵列计算结果和 MISR 压缩过程共同决定。
+The actual signature values depend on the LFSR sequence, array computation results, and MISR compaction process.
 
-## 7. 设计特点
+## 7. Design Notes
 
-- RTL 和 testbench 均使用 `.sv` 文件。
-- 时序逻辑统一使用 `always_ff @(posedge clk or negedge rst_n)`。
-- 组合逻辑统一使用 `always_comb`。
-- LFSR、MISR 使用相同反馈多项式，便于课程设计说明。
-- BIST 控制器自动完成多轮测试、响应压缩和完成指示。
-- testbench 同时比较 golden 和 faulty 两个顶层实例，直观展示故障检测效果。
+- Both RTL and testbench files use the `.sv` extension.
+- Sequential logic uses `always_ff @(posedge clk or negedge rst_n)`.
+- Combinational logic uses `always_comb`.
+- The LFSR and MISR share the same feedback polynomial, which simplifies the course-design explanation.
+- The BIST controller automatically sequences multiple tests, response compaction, and completion signaling.
+- The testbench compares golden and faulty top-level instances to demonstrate fault detection.
